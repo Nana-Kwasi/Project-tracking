@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
 import Spinner from './Spinner'
+import SuccessModal from './SuccessModal'
 import './Modal.css'
 
 const BRANCHES = [
@@ -18,7 +19,7 @@ const BRANCHES = [
   '4128 – KEJETIA BRANCH – 330602'
 ]
 
-const ProjectModal = ({ onClose, onSuccess }) => {
+const ProjectModal = ({ onClose, onSuccess, project = null, isEdit = false }) => {
   const { user } = useAuth()
   const [formData, setFormData] = useState({
     projectName: '',
@@ -27,11 +28,31 @@ const ProjectModal = ({ onClose, onSuccess }) => {
     description: '',
     priorityLevel: 'MEDIUM'
   })
+  const [files, setFiles] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [createdProjectId, setCreatedProjectId] = useState('')
   
   // Get logged by value from user context (handle both camelCase and lowercase)
   const loggedBy = user?.fNumber || user?.fnumber || ''
+
+  useEffect(() => {
+    if (isEdit && project) {
+      setFormData({
+        projectName: project.projectName || '',
+        department: project.department || '',
+        branch: project.branch || '',
+        description: project.description || '',
+        priorityLevel: project.priorityLevel || 'MEDIUM'
+      })
+    }
+  }, [isEdit, project])
+
+  const handleFileChange = (e) => {
+    const selectedFiles = Array.from(e.target.files)
+    setFiles(selectedFiles)
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -39,13 +60,50 @@ const ProjectModal = ({ onClose, onSuccess }) => {
     setError('')
     
     try {
-      await api.post('/api/projects', formData)
+      let projectId
+      if (isEdit) {
+        const response = await api.put(`/api/projects/${project.id}`, formData)
+        projectId = response.data.projectId
+      } else {
+        const response = await api.post('/api/projects', formData)
+        projectId = response.data.projectId
+        setCreatedProjectId(projectId)
+        
+        // Upload files if any
+        if (files.length > 0) {
+          const formDataFiles = new FormData()
+          files.forEach(file => {
+            formDataFiles.append('files', file)
+          })
+          formDataFiles.append('projectId', response.data.id)
+          
+          try {
+            await api.post('/api/files/upload', formDataFiles, {
+              headers: {
+                'Content-Type': 'multipart/form-data'
+              }
+            })
+          } catch (fileErr) {
+            console.error('File upload error:', fileErr)
+            // Don't fail the whole operation if file upload fails
+          }
+        }
+        
+        setShowSuccessModal(true)
+        return
+      }
+      
       onSuccess()
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create project')
+      setError(err.response?.data?.message || err.message || 'Failed to create project')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false)
+    onSuccess()
   }
 
   return (
@@ -114,21 +172,48 @@ const ProjectModal = ({ onClose, onSuccess }) => {
               <option value="HIGH">High</option>
             </select>
           </div>
+          <div className="file-upload-group">
+            <label>Documents (Optional)</label>
+            <div className="file-input-wrapper">
+              <input
+                type="file"
+                multiple
+                onChange={handleFileChange}
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png"
+              />
+            </div>
+            {files.length > 0 && (
+              <div className="file-list">
+                {files.map((file, index) => (
+                  <div key={index} className="file-item">
+                    <span className="file-item-name">{file.name}</span>
+                    <span>({(file.size / 1024).toFixed(2)} KB)</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
           {error && <div className="error-message">{error}</div>}
           <div className="modal-actions">
             <button type="button" onClick={onClose}>Cancel</button>
             <button type="submit" disabled={loading}>
               {loading ? (
                 <>
-                  <Spinner size="small" /> Creating...
+                  <Spinner size="small" /> {isEdit ? 'Updating...' : 'Creating...'}
                 </>
               ) : (
-                'Create Project'
+                isEdit ? 'Update Project' : 'Create Project'
               )}
             </button>
           </div>
         </form>
       </div>
+      {showSuccessModal && (
+        <SuccessModal
+          projectId={createdProjectId}
+          onClose={handleSuccessModalClose}
+        />
+      )}
     </div>
   )
 }

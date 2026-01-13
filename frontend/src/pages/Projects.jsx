@@ -85,6 +85,7 @@ const Projects = () => {
                 <th>Branch</th>
                 <th>Priority</th>
                 <th>Status</th>
+                <th>Files</th>
                 <th>Logged By</th>
                 <th>Actions</th>
               </tr>
@@ -107,6 +108,49 @@ const Projects = () => {
                   <td>{project.branch}</td>
                   <td>{project.priorityLevel}</td>
                   <td><span className={`status-badge ${project.status.toLowerCase()}`}>{project.status}</span></td>
+                  <td>
+                    {project.attachments && project.attachments.length > 0 ? (
+                      <div className="files-list">
+                        {project.attachments.map((file) => (
+                          <div key={file.id} className="file-link">
+                            <span 
+                              className="file-name" 
+                              onClick={() => window.open(`http://localhost:8080/api/files/view/${file.id}`, '_blank')}
+                              title="Click to view"
+                            >
+                              {file.fileName}
+                            </span>
+                            <button
+                              className="file-download-btn"
+                              onClick={async () => {
+                                try {
+                                  const response = await api.get(`/api/files/download/${file.id}`, {
+                                    responseType: 'blob'
+                                  })
+                                  const url = window.URL.createObjectURL(new Blob([response.data]))
+                                  const link = document.createElement('a')
+                                  link.href = url
+                                  link.setAttribute('download', file.fileName)
+                                  document.body.appendChild(link)
+                                  link.click()
+                                  link.remove()
+                                  window.URL.revokeObjectURL(url)
+                                } catch (error) {
+                                  console.error('Download error:', error)
+                                  alert('Failed to download file')
+                                }
+                              }}
+                              title="Download"
+                            >
+                              ↓
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span style={{ color: '#999' }}>No files</span>
+                    )}
+                  </td>
                   <td>{project.loggedBy}</td>
                   <td>
                     <button 
@@ -147,6 +191,7 @@ const Projects = () => {
                 <th>Requested Feature</th>
                 <th>Impact Level</th>
                 <th>Status</th>
+                <th>Files</th>
                 <th>Logged By</th>
                 <th>Actions</th>
               </tr>
@@ -167,6 +212,49 @@ const Projects = () => {
                   <td>{cr.requestedFeature}</td>
                   <td>{cr.impactLevel}</td>
                   <td><span className={`status-badge ${cr.status.toLowerCase()}`}>{cr.status}</span></td>
+                  <td>
+                    {cr.attachments && cr.attachments.length > 0 ? (
+                      <div className="files-list">
+                        {cr.attachments.map((file) => (
+                          <div key={file.id} className="file-link">
+                            <span 
+                              className="file-name" 
+                              onClick={() => window.open(`http://localhost:8080/api/files/view/${file.id}`, '_blank')}
+                              title="Click to view"
+                            >
+                              {file.fileName}
+                            </span>
+                            <button
+                              className="file-download-btn"
+                              onClick={async () => {
+                                try {
+                                  const response = await api.get(`/api/files/download/${file.id}`, {
+                                    responseType: 'blob'
+                                  })
+                                  const url = window.URL.createObjectURL(new Blob([response.data]))
+                                  const link = document.createElement('a')
+                                  link.href = url
+                                  link.setAttribute('download', file.fileName)
+                                  document.body.appendChild(link)
+                                  link.click()
+                                  link.remove()
+                                  window.URL.revokeObjectURL(url)
+                                } catch (error) {
+                                  console.error('Download error:', error)
+                                  alert('Failed to download file')
+                                }
+                              }}
+                              title="Download"
+                            >
+                              ↓
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span style={{ color: '#999' }}>No files</span>
+                    )}
+                  </td>
                   <td>{cr.loggedBy}</td>
                   <td>
                     <button 

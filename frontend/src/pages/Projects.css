@@ -154,3 +154,50 @@ tbody tr:hover {
   background: #f8d7da;
   color: #721c24;
 }
+
+.files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.file-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.file-name {
+  color: #00A8A8;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 0.85rem;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-name:hover {
+  color: #008080;
+}
+
+.file-download-btn {
+  background: none;
+  border: none;
+  color: #00A8A8;
+  cursor: pointer;
+  font-size: 1.3rem;
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.file-download-btn:hover {
+  color: #008080;
+  transform: scale(1.1);
+}

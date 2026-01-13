@@ -37,7 +37,7 @@ public class ChangeRequest {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
-    @OneToMany(mappedBy = "changeRequest", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "changeRequest", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<Attachment> attachments;
     
     @PrePersist

@@ -13,6 +13,7 @@ const ChangeRequestModal = ({ onClose, onSuccess }) => {
     reasonForChange: '',
     impactLevel: ''
   })
+  const [files, setFiles] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   
@@ -32,18 +33,44 @@ const ChangeRequestModal = ({ onClose, onSuccess }) => {
     }
   }
 
+  const handleFileChange = (e) => {
+    const selectedFiles = Array.from(e.target.files)
+    setFiles(selectedFiles)
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError('')
     
     try {
-      await api.post('/api/change-requests', {
+      const response = await api.post('/api/change-requests', {
         projectId: formData.projectId,
         requestedFeature: formData.requestedFeature,
         reasonForChange: formData.reasonForChange,
         impactLevel: formData.impactLevel
       })
+      
+      // Upload files if any
+      if (files.length > 0) {
+        const formDataFiles = new FormData()
+        files.forEach(file => {
+          formDataFiles.append('files', file)
+        })
+        formDataFiles.append('changeRequestId', response.data.id)
+        
+        try {
+          await api.post('/api/files/upload', formDataFiles, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          })
+        } catch (fileErr) {
+          console.error('File upload error:', fileErr)
+          // Don't fail the whole operation if file upload fails
+        }
+      }
+      
       onSuccess()
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create change request')
@@ -107,6 +134,27 @@ const ChangeRequestModal = ({ onClose, onSuccess }) => {
               value={formData.impactLevel}
               onChange={(e) => setFormData({ ...formData, impactLevel: e.target.value })}
             />
+          </div>
+          <div className="file-upload-group">
+            <label>Documents (Optional)</label>
+            <div className="file-input-wrapper">
+              <input
+                type="file"
+                multiple
+                onChange={handleFileChange}
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png"
+              />
+            </div>
+            {files.length > 0 && (
+              <div className="file-list">
+                {files.map((file, index) => (
+                  <div key={index} className="file-item">
+                    <span className="file-item-name">{file.name}</span>
+                    <span>({(file.size / 1024).toFixed(2)} KB)</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           {error && <div className="error-message">{error}</div>}
           <div className="modal-actions">

@@ -1,6 +1,7 @@
 package com.fnb.tracking.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class ChangeRequestDTO {
     private Long id;
@@ -15,6 +16,7 @@ public class ChangeRequestDTO {
     private Long loggedById;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private List<AttachmentDTO> attachments;
     
     public ChangeRequestDTO() {}
     
@@ -43,4 +45,6 @@ public class ChangeRequestDTO {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public List<AttachmentDTO> getAttachments() { return attachments; }
+    public void setAttachments(List<AttachmentDTO> attachments) { this.attachments = attachments; }
 }

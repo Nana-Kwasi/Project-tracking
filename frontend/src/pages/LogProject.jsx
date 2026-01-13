@@ -14,6 +14,8 @@ const LogProject = () => {
   const [changeRequests, setChangeRequests] = useState([])
   const [projectSearch, setProjectSearch] = useState('')
   const [changeRequestSearch, setChangeRequestSearch] = useState('')
+  const [editingProject, setEditingProject] = useState(null)
+  const [showEditModal, setShowEditModal] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -40,6 +42,49 @@ const LogProject = () => {
   const handleChangeRequestCreated = () => {
     setShowChangeRequestModal(false)
     fetchData()
+  }
+
+  const canEditProject = (project) => {
+    if (!project.createdAt) return false
+    const createdAt = new Date(project.createdAt)
+    const now = new Date()
+    const diffMinutes = (now - createdAt) / (1000 * 60)
+    const userFNumber = user?.fNumber || user?.fnumber || ''
+    return diffMinutes <= 15 && project.loggedBy === userFNumber
+  }
+
+  const handleEditProject = (project) => {
+    setEditingProject(project)
+    setShowEditModal(true)
+  }
+
+  const handleEditSuccess = () => {
+    setShowEditModal(false)
+    setEditingProject(null)
+    fetchData()
+  }
+
+  const handleDownloadFile = async (fileId, fileName) => {
+    try {
+      const response = await api.get(`/api/files/download/${fileId}`, {
+        responseType: 'blob'
+      })
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', fileName)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Download error:', error)
+      alert('Failed to download file')
+    }
+  }
+
+  const handleViewFile = (fileId) => {
+    window.open(`http://localhost:8080/api/files/view/${fileId}`, '_blank')
   }
 
   return (
@@ -91,7 +136,9 @@ const LogProject = () => {
                 <th>Branch</th>
                 <th>Priority</th>
                 <th>Status</th>
+                <th>Files</th>
                 <th>Date</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -112,12 +159,48 @@ const LogProject = () => {
                   <td>{project.branch}</td>
                   <td>{project.priorityLevel}</td>
                   <td><span className={`status-badge ${project.status.toLowerCase()}`}>{project.status}</span></td>
+                  <td>
+                    {project.attachments && project.attachments.length > 0 ? (
+                      <div className="files-list">
+                        {project.attachments.map((file) => (
+                          <div key={file.id} className="file-link">
+                            <span 
+                              className="file-name" 
+                              onClick={() => handleViewFile(file.id)}
+                              title="Click to view"
+                            >
+                              {file.fileName}
+                            </span>
+                            <button
+                              className="file-download-btn"
+                              onClick={() => handleDownloadFile(file.id, file.fileName)}
+                              title="Download"
+                            >
+                              ↓
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span style={{ color: '#999' }}>No files</span>
+                    )}
+                  </td>
                   <td>{new Date(project.createdAt).toLocaleDateString()}</td>
+                  <td>
+                    {canEditProject(project) && (
+                      <button
+                        className="edit-button"
+                        onClick={() => handleEditProject(project)}
+                      >
+                        Edit
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
               {projects.length === 0 && (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center' }}>No projects found</td>
+                  <td colSpan="9" style={{ textAlign: 'center' }}>No projects found</td>
                 </tr>
               )}
             </tbody>
@@ -142,6 +225,7 @@ const LogProject = () => {
                 <th>Requested Feature</th>
                 <th>Impact Level</th>
                 <th>Status</th>
+                <th>Files</th>
                 <th>Date</th>
               </tr>
             </thead>
@@ -161,12 +245,38 @@ const LogProject = () => {
                   <td>{cr.requestedFeature}</td>
                   <td>{cr.impactLevel}</td>
                   <td><span className={`status-badge ${cr.status.toLowerCase()}`}>{cr.status}</span></td>
+                  <td>
+                    {cr.attachments && cr.attachments.length > 0 ? (
+                      <div className="files-list">
+                        {cr.attachments.map((file) => (
+                          <div key={file.id} className="file-link">
+                            <span 
+                              className="file-name" 
+                              onClick={() => handleViewFile(file.id)}
+                              title="Click to view"
+                            >
+                              {file.fileName}
+                            </span>
+                            <button
+                              className="file-download-btn"
+                              onClick={() => handleDownloadFile(file.id, file.fileName)}
+                              title="Download"
+                            >
+                              ↓
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span style={{ color: '#999' }}>No files</span>
+                    )}
+                  </td>
                   <td>{new Date(cr.createdAt).toLocaleDateString()}</td>
                 </tr>
               ))}
               {changeRequests.length === 0 && (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: 'center' }}>No change requests found</td>
+                  <td colSpan="6" style={{ textAlign: 'center' }}>No change requests found</td>
                 </tr>
               )}
             </tbody>
@@ -185,6 +295,18 @@ const LogProject = () => {
         <ChangeRequestModal
           onClose={() => setShowChangeRequestModal(false)}
           onSuccess={handleChangeRequestCreated}
+        />
+      )}
+
+      {showEditModal && editingProject && (
+        <ProjectModal
+          project={editingProject}
+          isEdit={true}
+          onClose={() => {
+            setShowEditModal(false)
+            setEditingProject(null)
+          }}
+          onSuccess={handleEditSuccess}
         />
       )}
     </div>

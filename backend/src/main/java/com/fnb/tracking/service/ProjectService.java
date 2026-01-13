@@ -1,5 +1,6 @@
 package com.fnb.tracking.service;
 
+import com.fnb.tracking.dto.AttachmentDTO;
 import com.fnb.tracking.dto.ProjectDTO;
 import com.fnb.tracking.dto.StatusUpdateDTO;
 import com.fnb.tracking.model.Project;
@@ -12,8 +13,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -65,7 +68,7 @@ public class ProjectService {
     }
     
     public List<ProjectDTO> getAllProjects() {
-        return projectRepository.findAll().stream()
+        return projectRepository.findAllWithAttachments().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -74,6 +77,43 @@ public class ProjectService {
         return projectRepository.findByLoggedById(userId).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+    }
+    
+    public ProjectDTO getProjectById(Long projectId) {
+        Project project = projectRepository.findById(projectId).orElseThrow();
+        // Force load attachments
+        if (project.getAttachments() != null) {
+            project.getAttachments().size(); // Trigger lazy loading
+        }
+        return convertToDTO(project);
+    }
+    
+    public ProjectDTO updateProject(Long projectId, ProjectDTO dto, Long userId) {
+        Project project = projectRepository.findById(projectId).orElseThrow();
+        
+        // Check if user is the creator
+        if (!project.getLoggedBy().getId().equals(userId)) {
+            throw new RuntimeException("You can only edit your own projects");
+        }
+        
+        // Check if within 15 minutes
+        LocalDateTime now = LocalDateTime.now();
+        Duration duration = Duration.between(project.getCreatedAt(), now);
+        if (duration.toMinutes() > 15) {
+            throw new RuntimeException("Projects can only be edited within 15 minutes of creation");
+        }
+        
+        project.setProjectName(dto.getProjectName());
+        project.setDepartment(dto.getDepartment());
+        project.setBranch(dto.getBranch());
+        project.setDescription(dto.getDescription());
+        project.setPriorityLevel(Project.PriorityLevel.valueOf(dto.getPriorityLevel()));
+        
+        project = projectRepository.save(project);
+        logService.logAction(userId, "UPDATE_PROJECT", "PROJECT", projectId, 
+            "Updated project: " + project.getProjectId(), null);
+        
+        return convertToDTO(project);
     }
     
     @Transactional
@@ -124,6 +164,23 @@ public class ProjectService {
         dto.setLoggedById(project.getLoggedBy().getId());
         dto.setCreatedAt(project.getCreatedAt());
         dto.setUpdatedAt(project.getUpdatedAt());
+        
+        // Convert attachments
+        List<AttachmentDTO> attachmentDTOs = new ArrayList<>();
+        if (project.getAttachments() != null && !project.getAttachments().isEmpty()) {
+            attachmentDTOs = project.getAttachments().stream()
+                .map(att -> {
+                    AttachmentDTO attDTO = new AttachmentDTO();
+                    attDTO.setId(att.getId());
+                    attDTO.setFileName(att.getFileName());
+                    attDTO.setFileSize(att.getFileSize());
+                    attDTO.setUploadedBy(att.getUploadedBy().getFNumber());
+                    return attDTO;
+                })
+                .collect(Collectors.toList());
+        }
+        dto.setAttachments(attachmentDTOs);
+        
         return dto;
     }
 }

@@ -56,6 +56,23 @@ public class ProjectController {
         return ResponseEntity.ok(projects);
     }
     
+    @GetMapping("/{id}")
+    public ResponseEntity<ProjectDTO> getProject(@PathVariable Long id) {
+        ProjectDTO project = projectService.getProjectById(id);
+        return ResponseEntity.ok(project);
+    }
+    
+    @PutMapping("/{id}")
+    public ResponseEntity<ProjectDTO> updateProject(@PathVariable Long id, @RequestBody ProjectDTO dto, HttpServletRequest request) {
+        Long userId = getCurrentUserId(request);
+        try {
+            ProjectDTO updated = projectService.updateProject(id, dto, userId);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+    
     @PutMapping("/{id}/status")
     public ResponseEntity<ProjectDTO> updateStatus(@PathVariable Long id, @RequestBody StatusUpdateDTO statusUpdate, HttpServletRequest request) {
         Long adminId = getCurrentUserId(request);

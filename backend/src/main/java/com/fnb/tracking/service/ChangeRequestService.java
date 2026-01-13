@@ -1,5 +1,6 @@
 package com.fnb.tracking.service;
 
+import com.fnb.tracking.dto.AttachmentDTO;
 import com.fnb.tracking.dto.ChangeRequestDTO;
 import com.fnb.tracking.dto.StatusUpdateDTO;
 import com.fnb.tracking.model.ChangeRequest;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -57,7 +59,7 @@ public class ChangeRequestService {
     }
     
     public List<ChangeRequestDTO> getAllChangeRequests() {
-        return changeRequestRepository.findAll().stream()
+        return changeRequestRepository.findAllWithAttachments().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -122,6 +124,23 @@ public class ChangeRequestService {
         dto.setLoggedById(changeRequest.getLoggedBy().getId());
         dto.setCreatedAt(changeRequest.getCreatedAt());
         dto.setUpdatedAt(changeRequest.getUpdatedAt());
+        
+        // Convert attachments
+        List<AttachmentDTO> attachmentDTOs = new ArrayList<>();
+        if (changeRequest.getAttachments() != null && !changeRequest.getAttachments().isEmpty()) {
+            attachmentDTOs = changeRequest.getAttachments().stream()
+                .map(att -> {
+                    AttachmentDTO attDTO = new AttachmentDTO();
+                    attDTO.setId(att.getId());
+                    attDTO.setFileName(att.getFileName());
+                    attDTO.setFileSize(att.getFileSize());
+                    attDTO.setUploadedBy(att.getUploadedBy().getFNumber());
+                    return attDTO;
+                })
+                .collect(Collectors.toList());
+        }
+        dto.setAttachments(attachmentDTOs);
+        
         return dto;
     }
 }
