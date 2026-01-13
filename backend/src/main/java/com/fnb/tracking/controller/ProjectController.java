@@ -1,0 +1,65 @@
+package com.fnb.tracking.controller;
+
+import com.fnb.tracking.dto.ProjectDTO;
+import com.fnb.tracking.dto.StatusUpdateDTO;
+import com.fnb.tracking.model.User;
+import com.fnb.tracking.repository.UserRepository;
+import com.fnb.tracking.security.JwtUtil;
+import com.fnb.tracking.service.ProjectService;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/projects")
+@CrossOrigin(origins = "http://localhost:3000")
+public class ProjectController {
+    @Autowired
+    private ProjectService projectService;
+    
+    @Autowired
+    private JwtUtil jwtUtil;
+    
+    @Autowired
+    private UserRepository userRepository;
+    
+    private Long getCurrentUserId(HttpServletRequest request) {
+        String token = request.getHeader("Authorization").substring(7);
+        String fNumber = jwtUtil.extractUsername(token);
+        User user = userRepository.findByFNumber(fNumber).orElseThrow();
+        return user.getId();
+    }
+    
+    @PostMapping
+    public ResponseEntity<ProjectDTO> createProject(@RequestBody ProjectDTO dto, HttpServletRequest request) {
+        Long userId = getCurrentUserId(request);
+        ProjectDTO created = projectService.createProject(dto, userId);
+        return ResponseEntity.ok(created);
+    }
+    
+    @GetMapping
+    public ResponseEntity<List<ProjectDTO>> getProjects(HttpServletRequest request) {
+        String token = request.getHeader("Authorization").substring(7);
+        String role = jwtUtil.extractRole(token);
+        
+        List<ProjectDTO> projects;
+        if ("ADMIN".equals(role)) {
+            projects = projectService.getAllProjects();
+        } else {
+            Long userId = getCurrentUserId(request);
+            projects = projectService.getUserProjects(userId);
+        }
+        
+        return ResponseEntity.ok(projects);
+    }
+    
+    @PutMapping("/{id}/status")
+    public ResponseEntity<ProjectDTO> updateStatus(@PathVariable Long id, @RequestBody StatusUpdateDTO statusUpdate, HttpServletRequest request) {
+        Long adminId = getCurrentUserId(request);
+        ProjectDTO updated = projectService.updateProjectStatus(id, statusUpdate, adminId);
+        return ResponseEntity.ok(updated);
+    }
+}
