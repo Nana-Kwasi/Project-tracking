@@ -3,6 +3,8 @@ import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
 import ProjectModal from '../components/ProjectModal'
 import ChangeRequestModal from '../components/ChangeRequestModal'
+import DeletedProjectsModal from '../components/DeletedProjectsModal'
+import RejectionDetailsModal from '../components/RejectionDetailsModal'
 import Spinner from '../components/Spinner'
 import './LogProject.css'
 
@@ -16,6 +18,9 @@ const LogProject = () => {
   const [changeRequestSearch, setChangeRequestSearch] = useState('')
   const [editingProject, setEditingProject] = useState(null)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeletedProjectsModal, setShowDeletedProjectsModal] = useState(false)
+  const [selectedRejectedProject, setSelectedRejectedProject] = useState(null)
+  const [showRejectionModal, setShowRejectionModal] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -89,7 +94,15 @@ const LogProject = () => {
 
   return (
     <div className="log-project">
-      <h1>Log Project</h1>
+      <div className="page-header">
+        <h1>Log Project</h1>
+        <button 
+          className="view-deleted-button"
+          onClick={() => setShowDeletedProjectsModal(true)}
+        >
+          View Deleted Projects
+        </button>
+      </div>
       
       <div className="log-sections">
         <div className="log-section">
@@ -158,7 +171,23 @@ const LogProject = () => {
                   <td>{project.department}</td>
                   <td>{project.branch}</td>
                   <td>{project.priorityLevel}</td>
-                  <td><span className={`status-badge ${project.status.toLowerCase()}`}>{project.status}</span></td>
+                  <td>
+                    <div className="status-cell">
+                      <span className={`status-badge ${project.status.toLowerCase()}`}>{project.status}</span>
+                      {project.status === 'REJECTED' && (
+                        <button
+                          className="view-rejection-btn"
+                          onClick={() => {
+                            setSelectedRejectedProject(project)
+                            setShowRejectionModal(true)
+                          }}
+                          title="View rejection details"
+                        >
+                          View
+                        </button>
+                      )}
+                    </div>
+                  </td>
                   <td>
                     {project.attachments && project.attachments.length > 0 ? (
                       <div className="files-list">
@@ -307,6 +336,22 @@ const LogProject = () => {
             setEditingProject(null)
           }}
           onSuccess={handleEditSuccess}
+        />
+      )}
+
+      {showDeletedProjectsModal && (
+        <DeletedProjectsModal
+          onClose={() => setShowDeletedProjectsModal(false)}
+        />
+      )}
+
+      {showRejectionModal && selectedRejectedProject && (
+        <RejectionDetailsModal
+          project={selectedRejectedProject}
+          onClose={() => {
+            setShowRejectionModal(false)
+            setSelectedRejectedProject(null)
+          }}
         />
       )}
     </div>

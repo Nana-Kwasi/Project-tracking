@@ -4,7 +4,7 @@ import Spinner from './Spinner'
 import './Modal.css'
 
 const STATUS_OPTIONS = [
-  'PENDING', 'ACCEPTED', 'REJECTED', 'DISCUSSION', 'DOCUMENTATION',
+  'ACCEPTED', 'REJECTED', 'DISCUSSION', 'DOCUMENTATION',
   'DEVELOPERS_DISCUSSION', 'TESTING', 'INT', 'QA', 'UAT',
   'QA_SIGN_OFF_IN_PROGRESS', 'QA_SIGN_OFF_COMPLETE',
   'RELEASE_NOTES_PREPARED', 'RELEASED_TO_PRODUCTION'
@@ -16,6 +16,14 @@ const StatusUpdateModal = ({ id, isChangeRequest, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  const handleClose = () => {
+    setStatus('')
+    setRejectionReason('')
+    setError('')
+    setLoading(false)
+    onClose()
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -26,24 +34,26 @@ const StatusUpdateModal = ({ id, isChangeRequest, onClose, onSuccess }) => {
         ? `/api/change-requests/${id}/status`
         : `/api/projects/${id}/status`
       
-      await api.put(endpoint, {
+      const payload = {
         status,
-        rejectionReason: status === 'REJECTED' ? rejectionReason : null
-      })
+        rejectionReason: status === 'REJECTED' ? (rejectionReason || '').trim() : null
+      }
+      
+      await api.put(endpoint, payload)
+      setLoading(false)
       onSuccess()
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update status')
-    } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={handleClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Update Status</h2>
-          <button className="close-button" onClick={onClose}>×</button>
+          <button className="close-button" onClick={handleClose}>×</button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -73,7 +83,7 @@ const StatusUpdateModal = ({ id, isChangeRequest, onClose, onSuccess }) => {
           )}
           {error && <div className="error-message">{error}</div>}
           <div className="modal-actions">
-            <button type="button" onClick={onClose}>Cancel</button>
+            <button type="button" onClick={handleClose}>Cancel</button>
             <button type="submit" disabled={loading}>
               {loading ? (
                 <>

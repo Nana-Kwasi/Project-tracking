@@ -17,6 +17,11 @@ public class ProjectDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<AttachmentDTO> attachments;
+    private Boolean isDeleted;
+    private LocalDateTime deletedAt;
+    private String deletedBy;
+    private String deletionReason;
+    private String rejectionReason;
     
     public ProjectDTO() {}
     
@@ -47,4 +52,14 @@ public class ProjectDTO {
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
     public List<AttachmentDTO> getAttachments() { return attachments; }
     public void setAttachments(List<AttachmentDTO> attachments) { this.attachments = attachments; }
+    public Boolean getIsDeleted() { return isDeleted; }
+    public void setIsDeleted(Boolean isDeleted) { this.isDeleted = isDeleted; }
+    public LocalDateTime getDeletedAt() { return deletedAt; }
+    public void setDeletedAt(LocalDateTime deletedAt) { this.deletedAt = deletedAt; }
+    public String getDeletedBy() { return deletedBy; }
+    public void setDeletedBy(String deletedBy) { this.deletedBy = deletedBy; }
+    public String getDeletionReason() { return deletionReason; }
+    public void setDeletionReason(String deletionReason) { this.deletionReason = deletionReason; }
+    public String getRejectionReason() { return rejectionReason; }
+    public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
 }

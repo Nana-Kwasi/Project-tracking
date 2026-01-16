@@ -22,6 +22,10 @@ CREATE TABLE IF NOT EXISTS projects (
     priority_level VARCHAR(20) CHECK (priority_level IN ('LOW', 'MEDIUM', 'HIGH')),
     status VARCHAR(50) DEFAULT 'PENDING',
     logged_by BIGINT NOT NULL REFERENCES users(id),
+    is_deleted BOOLEAN DEFAULT FALSE,
+    deleted_at TIMESTAMP,
+    deleted_by BIGINT REFERENCES users(id),
+    deletion_reason TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

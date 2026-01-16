@@ -117,6 +117,49 @@ public class ProjectService {
     }
     
     @Transactional
+    public ProjectDTO deleteProject(Long projectId, String deletionReason, Long adminId) {
+        Project project = projectRepository.findById(projectId).orElseThrow();
+        User admin = userRepository.findById(adminId).orElseThrow();
+        
+        if (project.getIsDeleted() != null && project.getIsDeleted()) {
+            throw new RuntimeException("Project is already deleted");
+        }
+        
+        project.setIsDeleted(true);
+        project.setDeletedAt(LocalDateTime.now());
+        project.setDeletedBy(admin);
+        project.setDeletionReason(deletionReason);
+        
+        project = projectRepository.save(project);
+        
+        // Notify the user who created the project
+        notificationService.createNotification(
+            project.getLoggedBy().getId(),
+            project.getId(),
+            null,
+            "PROJECT_DELETED",
+            "Your project " + project.getProjectId() + " has been deleted. Reason: " + deletionReason
+        );
+        
+        logService.logAction(adminId, "DELETE_PROJECT", "PROJECT", projectId, 
+            "Deleted project: " + project.getProjectId() + ". Reason: " + deletionReason, null);
+        
+        return convertToDTO(project);
+    }
+    
+    public List<ProjectDTO> getDeletedProjects(Long userId, String role) {
+        List<Project> deletedProjects;
+        if ("ADMIN".equals(role)) {
+            deletedProjects = projectRepository.findDeletedProjects();
+        } else {
+            deletedProjects = projectRepository.findDeletedProjectsByUser(userId);
+        }
+        return deletedProjects.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+    
+    @Transactional
     public ProjectDTO updateProjectStatus(Long projectId, StatusUpdateDTO statusUpdate, Long adminId) {
         Project project = projectRepository.findById(projectId).orElseThrow();
         User admin = userRepository.findById(adminId).orElseThrow();
@@ -129,12 +172,15 @@ public class ProjectService {
         history.setOldStatus(oldStatus);
         history.setNewStatus(statusUpdate.getStatus());
         history.setUpdatedBy(admin);
-        if ("REJECTED".equals(statusUpdate.getStatus()) && statusUpdate.getRejectionReason() != null) {
-            history.setRejectionReason(statusUpdate.getRejectionReason());
+        if ("REJECTED".equals(statusUpdate.getStatus()) && statusUpdate.getRejectionReason() != null && !statusUpdate.getRejectionReason().trim().isEmpty()) {
+            history.setRejectionReason(statusUpdate.getRejectionReason().trim());
         }
         statusHistoryRepository.save(history);
         
         project = projectRepository.save(project);
+        
+        // Flush to ensure StatusHistory is saved before converting to DTO
+        statusHistoryRepository.flush();
         
         notificationService.createNotification(
             project.getLoggedBy().getId(),
@@ -164,6 +210,20 @@ public class ProjectService {
         dto.setLoggedById(project.getLoggedBy().getId());
         dto.setCreatedAt(project.getCreatedAt());
         dto.setUpdatedAt(project.getUpdatedAt());
+        dto.setIsDeleted(project.getIsDeleted());
+        dto.setDeletedAt(project.getDeletedAt());
+        if (project.getDeletedBy() != null) {
+            dto.setDeletedBy(project.getDeletedBy().getFNumber());
+        }
+        dto.setDeletionReason(project.getDeletionReason());
+        
+        // Get latest rejection reason if status is REJECTED
+        if ("REJECTED".equals(project.getStatus())) {
+            List<StatusHistory> rejectionHistory = statusHistoryRepository.findRejectionHistoryByProjectId(project.getId());
+            if (!rejectionHistory.isEmpty()) {
+                dto.setRejectionReason(rejectionHistory.get(0).getRejectionReason());
+            }
+        }
         
         // Convert attachments
         List<AttachmentDTO> attachmentDTOs = new ArrayList<>();

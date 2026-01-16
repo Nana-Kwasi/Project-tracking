@@ -79,4 +79,41 @@ public class ProjectController {
         ProjectDTO updated = projectService.updateProjectStatus(id, statusUpdate, adminId);
         return ResponseEntity.ok(updated);
     }
+    
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ProjectDTO> deleteProject(@PathVariable Long id, @RequestBody DeleteProjectRequest deleteRequest, HttpServletRequest request) {
+        String token = request.getHeader("Authorization").substring(7);
+        String role = jwtUtil.extractRole(token);
+        if (!"ADMIN".equals(role)) {
+            return ResponseEntity.status(403).build();
+        }
+        Long adminId = getCurrentUserId(request);
+        try {
+            ProjectDTO deleted = projectService.deleteProject(id, deleteRequest.getDeletionReason(), adminId);
+            return ResponseEntity.ok(deleted);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+    
+    @GetMapping("/deleted")
+    public ResponseEntity<List<ProjectDTO>> getDeletedProjects(HttpServletRequest request) {
+        String token = request.getHeader("Authorization").substring(7);
+        String role = jwtUtil.extractRole(token);
+        Long userId = getCurrentUserId(request);
+        List<ProjectDTO> deletedProjects = projectService.getDeletedProjects(userId, role);
+        return ResponseEntity.ok(deletedProjects);
+    }
+    
+    public static class DeleteProjectRequest {
+        private String deletionReason;
+        
+        public String getDeletionReason() {
+            return deletionReason;
+        }
+        
+        public void setDeletionReason(String deletionReason) {
+            this.deletionReason = deletionReason;
+        }
+    }
 }

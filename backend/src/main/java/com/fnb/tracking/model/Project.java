@@ -38,6 +38,19 @@ public class Project {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
+    
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+    
+    @ManyToOne
+    @JoinColumn(name = "deleted_by")
+    private User deletedBy;
+    
+    @Column(name = "deletion_reason", columnDefinition = "TEXT")
+    private String deletionReason;
+    
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL)
     private List<ChangeRequest> changeRequests;
     
@@ -86,4 +99,12 @@ public class Project {
     public void setChangeRequests(List<ChangeRequest> changeRequests) { this.changeRequests = changeRequests; }
     public List<Attachment> getAttachments() { return attachments; }
     public void setAttachments(List<Attachment> attachments) { this.attachments = attachments; }
+    public Boolean getIsDeleted() { return isDeleted; }
+    public void setIsDeleted(Boolean isDeleted) { this.isDeleted = isDeleted; }
+    public LocalDateTime getDeletedAt() { return deletedAt; }
+    public void setDeletedAt(LocalDateTime deletedAt) { this.deletedAt = deletedAt; }
+    public User getDeletedBy() { return deletedBy; }
+    public void setDeletedBy(User deletedBy) { this.deletedBy = deletedBy; }
+    public String getDeletionReason() { return deletionReason; }
+    public void setDeletionReason(String deletionReason) { this.deletionReason = deletionReason; }
 }

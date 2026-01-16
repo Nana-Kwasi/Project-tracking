@@ -1,19 +1,25 @@
 import { useState, useEffect } from 'react'
+import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
 import StatusUpdateModal from '../components/StatusUpdateModal'
+import DeleteProjectModal from '../components/DeleteProjectModal'
 import Spinner from '../components/Spinner'
 import './Projects.css'
 
 const Projects = () => {
+  const { user } = useAuth()
   const [projects, setProjects] = useState([])
   const [changeRequests, setChangeRequests] = useState([])
   const [selectedProject, setSelectedProject] = useState(null)
   const [selectedChangeRequest, setSelectedChangeRequest] = useState(null)
   const [showStatusModal, setShowStatusModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [isChangeRequest, setIsChangeRequest] = useState(false)
   const [updatingStatus, setUpdatingStatus] = useState(null)
   const [projectSearch, setProjectSearch] = useState('')
   const [changeRequestSearch, setChangeRequestSearch] = useState('')
+  
+  const isAdmin = user?.role === 'ADMIN'
 
   useEffect(() => {
     fetchData()
@@ -45,10 +51,21 @@ const Projects = () => {
   }
   
   const handleStatusUpdated = () => {
+    setUpdatingStatus(null)
     setShowStatusModal(false)
     setSelectedProject(null)
     setSelectedChangeRequest(null)
-    setUpdatingStatus(null)
+    fetchData()
+  }
+
+  const handleDeleteProject = (project) => {
+    setSelectedProject(project)
+    setShowDeleteModal(true)
+  }
+
+  const handleDeleteSuccess = () => {
+    setShowDeleteModal(false)
+    setSelectedProject(null)
     fetchData()
   }
 
@@ -153,19 +170,30 @@ const Projects = () => {
                   </td>
                   <td>{project.loggedBy}</td>
                   <td>
-                    <button 
-                      className="action-button"
-                      onClick={() => handleStatusUpdate(project.id, false)}
-                      disabled={updatingStatus === project.id}
-                    >
-                      {updatingStatus === project.id ? (
-                        <>
-                          <Spinner size="small" /> Updating...
-                        </>
-                      ) : (
-                        'Update Status'
+                    <div className="action-buttons">
+                      <button 
+                        className="action-button"
+                        onClick={() => handleStatusUpdate(project.id, false)}
+                        disabled={updatingStatus === project.id}
+                      >
+                        {updatingStatus === project.id ? (
+                          <>
+                            <Spinner size="small" /> Updating...
+                          </>
+                        ) : (
+                          'Update Status'
+                        )}
+                      </button>
+                      {isAdmin && (
+                        <button 
+                          className="delete-action-button"
+                          onClick={() => handleDeleteProject(project)}
+                          title="Delete Project"
+                        >
+                          🗑️
+                        </button>
                       )}
-                    </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -290,6 +318,18 @@ const Projects = () => {
           onSuccess={handleStatusUpdated}
         />
       )}
+
+      {showDeleteModal && selectedProject && (
+        <DeleteProjectModal
+          project={selectedProject}
+          onClose={() => {
+            setShowDeleteModal(false)
+            setSelectedProject(null)
+          }}
+          onSuccess={handleDeleteSuccess}
+        />
+      )}
+
     </div>
   )
 }
