@@ -8,6 +8,7 @@ import com.fnb.tracking.model.Project;
 import com.fnb.tracking.model.StatusHistory;
 import com.fnb.tracking.model.User;
 import com.fnb.tracking.repository.ChangeRequestRepository;
+import com.fnb.tracking.repository.NotificationRepository;
 import com.fnb.tracking.repository.ProjectRepository;
 import com.fnb.tracking.repository.StatusHistoryRepository;
 import com.fnb.tracking.repository.UserRepository;
@@ -32,6 +33,9 @@ public class ChangeRequestService {
     
     @Autowired
     private StatusHistoryRepository statusHistoryRepository;
+    
+    @Autowired
+    private NotificationRepository notificationRepository;
     
     @Autowired
     private NotificationService notificationService;
@@ -110,6 +114,26 @@ public class ChangeRequestService {
         return convertToDTO(changeRequest);
     }
     
+    @Transactional
+    public void deleteChangeRequest(Long changeRequestId) {
+        ChangeRequest changeRequest = changeRequestRepository.findById(changeRequestId).orElseThrow();
+        
+        // Delete notifications first (they reference change_request_id)
+        List<com.fnb.tracking.model.Notification> notifications = notificationRepository.findByChangeRequestId(changeRequestId);
+        if (!notifications.isEmpty()) {
+            notificationRepository.deleteAll(notifications);
+        }
+        
+        // Delete status history records (they reference change_request_id)
+        List<StatusHistory> statusHistories = statusHistoryRepository.findByChangeRequestId(changeRequestId);
+        if (!statusHistories.isEmpty()) {
+            statusHistoryRepository.deleteAll(statusHistories);
+        }
+        
+        // Delete the change request (attachments will be deleted via cascade)
+        changeRequestRepository.delete(changeRequest);
+    }
+    
     private ChangeRequestDTO convertToDTO(ChangeRequest changeRequest) {
         ChangeRequestDTO dto = new ChangeRequestDTO();
         dto.setId(changeRequest.getId());
@@ -122,6 +146,16 @@ public class ChangeRequestService {
         dto.setStatus(changeRequest.getStatus());
         dto.setLoggedBy(changeRequest.getLoggedBy().getFNumber());
         dto.setLoggedById(changeRequest.getLoggedBy().getId());
+        
+        // Get the F-number of the user who last updated the status
+        List<StatusHistory> latestHistory = statusHistoryRepository.findLatestStatusUpdateByChangeRequestId(changeRequest.getId());
+        if (!latestHistory.isEmpty()) {
+            StatusHistory latest = latestHistory.get(0);
+            if (latest.getUpdatedBy() != null) {
+                dto.setUpdatedBy(latest.getUpdatedBy().getFNumber());
+            }
+        }
+        
         dto.setCreatedAt(changeRequest.getCreatedAt());
         dto.setUpdatedAt(changeRequest.getUpdatedAt());
         

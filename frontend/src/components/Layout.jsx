@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import ProjectDetailsModal from './ProjectDetailsModal'
 import Spinner from './Spinner'
 import './Layout.css'
 
@@ -10,9 +11,36 @@ const Layout = () => {
   const location = useLocation()
   const isAdmin = user?.role === 'ADMIN'
   const [logoutLoading, setLogoutLoading] = useState(false)
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false)
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showProjectModal, setShowProjectModal] = useState(false)
+  const [searchedProjectId, setSearchedProjectId] = useState('')
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDate(new Date())
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [])
+
+  const formatDate = (date) => {
+    const options = { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    }
+    return date.toLocaleDateString('en-US', options)
+  }
 
   const handleLogout = () => {
     setLogoutLoading(true)
+    setShowProfileDropdown(false)
     setTimeout(() => {
       logout()
       navigate('/login')
@@ -20,6 +48,29 @@ const Layout = () => {
   }
 
   const isActive = (path) => location.pathname === path
+
+  const handleSearch = (e) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      setSearchedProjectId(searchQuery.trim())
+      setShowProjectModal(true)
+    }
+  }
+
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value)
+  }
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showProfileDropdown && !event.target.closest('.profile-container')) {
+        setShowProfileDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showProfileDropdown])
 
   return (
     <div className="layout">
@@ -78,28 +129,79 @@ const Layout = () => {
             </Link>
           )}
         </nav>
-        <div className="sidebar-footer">
-          <div className="user-info">
-            <span className="user-fnumber">{user?.fNumber}</span>
-            <span className="user-role">{user?.role === 'ADMIN' ? 'Administrator' : 'User'}</span>
-          </div>
-          <button className="logout-btn" onClick={handleLogout} disabled={logoutLoading}>
-            {logoutLoading ? (
-              <>
-                <Spinner size="small" /> <span>Logging out...</span>
-              </>
-            ) : (
-              <>
-                <span className="logout-icon">🚪</span>
-                <span>Logout</span>
-              </>
-            )}
-          </button>
-        </div>
       </aside>
       <main className="main-content">
-        <Outlet />
+        <header className="top-header">
+          <div className="date-display">
+            <span className="date-icon">📅</span>
+            <span className="date-text">{formatDate(currentDate)}</span>
+          </div>
+          <form className="header-search-form" onSubmit={handleSearch}>
+            <input
+              type="text"
+              className="header-search-input"
+              placeholder="Search by Project ID..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+            />
+            <button type="submit" className="header-search-button" title="Search project">
+              🔍
+            </button>
+          </form>
+          <div className="profile-container">
+            <div 
+              className="profile-section" 
+              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+            >
+              <img 
+                src="/Images/man.png" 
+                alt="Profile" 
+                className="profile-icon"
+              />
+              <span className="profile-fnumber">{user?.fNumber || 'N/A'}</span>
+            </div>
+            {showProfileDropdown && (
+              <div className="profile-dropdown">
+                <div className="dropdown-header">
+                  <span className="dropdown-fnumber">{user?.fNumber || 'N/A'}</span>
+                  <span className="dropdown-role">{user?.role === 'ADMIN' ? 'Administrator' : 'User'}</span>
+                </div>
+                <div className="dropdown-divider"></div>
+                <button 
+                  className="dropdown-logout-btn" 
+                  onClick={handleLogout} 
+                  disabled={logoutLoading}
+                >
+                  {logoutLoading ? (
+                    <>
+                      <Spinner size="small" /> <span>Logging out...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="logout-icon">🚪</span>
+                      <span>Logout</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </header>
+        <div className="content-wrapper">
+          <Outlet />
+        </div>
       </main>
+
+      {showProjectModal && (
+        <ProjectDetailsModal
+          projectId={searchedProjectId}
+          onClose={() => {
+            setShowProjectModal(false)
+            setSearchQuery('')
+            setSearchedProjectId('')
+          }}
+        />
+      )}
     </div>
   )
 }

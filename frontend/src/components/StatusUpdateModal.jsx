@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import api from '../services/api'
+import { useToast } from '../context/ToastContext'
 import Spinner from './Spinner'
 import './Modal.css'
 
@@ -11,6 +12,7 @@ const STATUS_OPTIONS = [
 ]
 
 const StatusUpdateModal = ({ id, isChangeRequest, onClose, onSuccess }) => {
+  const { showSuccess } = useToast()
   const [status, setStatus] = useState('')
   const [rejectionReason, setRejectionReason] = useState('')
   const [loading, setLoading] = useState(false)
@@ -39,8 +41,14 @@ const StatusUpdateModal = ({ id, isChangeRequest, onClose, onSuccess }) => {
         rejectionReason: status === 'REJECTED' ? (rejectionReason || '').trim() : null
       }
       
-      await api.put(endpoint, payload)
+      // Add minimum delay to show spinner
+      await Promise.all([
+        api.put(endpoint, payload),
+        new Promise(resolve => setTimeout(resolve, 1500)) // 1.5 second minimum delay
+      ])
+      
       setLoading(false)
+      showSuccess(`Status updated successfully to ${status.replace(/_/g, ' ')}!`)
       onSuccess()
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update status')

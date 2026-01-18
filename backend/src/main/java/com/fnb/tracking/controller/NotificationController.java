@@ -1,8 +1,7 @@
 package com.fnb.tracking.controller;
 
-import com.fnb.tracking.model.Notification;
+import com.fnb.tracking.dto.NotificationDTO;
 import com.fnb.tracking.model.User;
-import com.fnb.tracking.repository.NotificationRepository;
 import com.fnb.tracking.repository.UserRepository;
 import com.fnb.tracking.security.JwtUtil;
 import com.fnb.tracking.service.NotificationService;
@@ -27,11 +26,11 @@ public class NotificationController {
     private UserRepository userRepository;
     
     @GetMapping
-    public ResponseEntity<List<Notification>> getUserNotifications(HttpServletRequest request) {
+    public ResponseEntity<List<NotificationDTO>> getUserNotifications(HttpServletRequest request) {
         String token = request.getHeader("Authorization").substring(7);
         String fNumber = jwtUtil.extractUsername(token);
         User user = userRepository.findByFNumber(fNumber).orElseThrow();
-        List<Notification> notifications = notificationService.getUserNotifications(user.getId());
+        List<NotificationDTO> notifications = notificationService.getUserNotifications(user.getId());
         return ResponseEntity.ok(notifications);
     }
     
@@ -42,5 +41,14 @@ public class NotificationController {
         User user = userRepository.findByFNumber(fNumber).orElseThrow();
         Long count = notificationService.getUnreadCount(user.getId());
         return ResponseEntity.ok(count);
+    }
+    
+    @PutMapping("/{id}/read")
+    public ResponseEntity<Void> markAsRead(@PathVariable Long id, HttpServletRequest request) {
+        String token = request.getHeader("Authorization").substring(7);
+        String fNumber = jwtUtil.extractUsername(token);
+        User user = userRepository.findByFNumber(fNumber).orElseThrow();
+        notificationService.markAsRead(id, user.getId());
+        return ResponseEntity.ok().build();
     }
 }

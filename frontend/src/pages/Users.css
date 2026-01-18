@@ -17,6 +17,13 @@
   margin-bottom: 2rem;
 }
 
+.page-header h2 {
+  color: #333;
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 600;
+}
+
 .primary-button {
   background: #F9A01B;
   color: white;
@@ -75,6 +82,12 @@ tbody tr:hover {
   background: #f8f9fa;
 }
 
+.user-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .action-button {
   background: #00A8A8;
   color: white;
@@ -85,13 +98,68 @@ tbody tr:hover {
   font-size: 0.875rem;
   font-weight: 500;
   transition: all 0.2s ease;
-  margin-right: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.action-button:hover {
+.action-button:hover:not(:disabled) {
   background: #00B3B3;
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 168, 168, 0.3);
+}
+
+.action-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.suspend-button {
+  background: #ff9800;
+}
+
+.suspend-button:hover:not(:disabled) {
+  background: #f57c00;
+  box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
+}
+
+.activate-button {
+  background: #4caf50;
+}
+
+.activate-button:hover:not(:disabled) {
+  background: #388e3c;
+  box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+}
+
+.delete-button {
+  background: #d32f2f;
+  color: white;
+  border: none;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  line-height: 1;
+  min-width: 36px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-button:hover:not(:disabled) {
+  background: #b71c1c;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(211, 47, 47, 0.3);
+}
+
+.delete-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .status-badge {

@@ -14,7 +14,7 @@
     
     <groupId>com.fnb</groupId>
     <artifactId>project-tracking</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <name>FNB Project Tracking System</name>
     <description>Project and Change Request Tracking System</description>
     

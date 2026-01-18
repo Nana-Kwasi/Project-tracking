@@ -22,6 +22,7 @@ public class ProjectDTO {
     private String deletedBy;
     private String deletionReason;
     private String rejectionReason;
+    private String updatedBy;
     
     public ProjectDTO() {}
     
@@ -62,4 +63,6 @@ public class ProjectDTO {
     public void setDeletionReason(String deletionReason) { this.deletionReason = deletionReason; }
     public String getRejectionReason() { return rejectionReason; }
     public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
+    public String getUpdatedBy() { return updatedBy; }
+    public void setUpdatedBy(String updatedBy) { this.updatedBy = updatedBy; }
 }

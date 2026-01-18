@@ -52,6 +52,10 @@ export const AuthProvider = ({ children }) => {
       setUser(userData)
       return { success: true }
     } catch (error) {
+      // Check if account is suspended (403 status)
+      if (error.response?.status === 403) {
+        return { success: false, suspended: true, error: 'Account suspended' }
+      }
       return { success: false, error: error.response?.data?.message || 'Login failed' }
     }
   }

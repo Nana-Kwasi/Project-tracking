@@ -1,6 +1,7 @@
 package com.fnb.tracking.dto;
 
 import java.util.List;
+import java.util.Map;
 
 public class DashboardStatsDTO {
     private Long totalProjects;
@@ -9,6 +10,9 @@ public class DashboardStatsDTO {
     private Long projectsByStatus;
     private List<ProjectDTO> newProjectRequestsList;
     private List<ChangeRequestDTO> changeRequestsList;
+    private Map<String, Long> projectsByStatusMap;
+    private Map<String, Long> projectsByDepartmentMap;
+    private Map<String, Long> projectsByPriorityMap;
     
     public DashboardStatsDTO() {}
     
@@ -25,4 +29,10 @@ public class DashboardStatsDTO {
     public void setNewProjectRequestsList(List<ProjectDTO> newProjectRequestsList) { this.newProjectRequestsList = newProjectRequestsList; }
     public List<ChangeRequestDTO> getChangeRequestsList() { return changeRequestsList; }
     public void setChangeRequestsList(List<ChangeRequestDTO> changeRequestsList) { this.changeRequestsList = changeRequestsList; }
+    public Map<String, Long> getProjectsByStatusMap() { return projectsByStatusMap; }
+    public void setProjectsByStatusMap(Map<String, Long> projectsByStatusMap) { this.projectsByStatusMap = projectsByStatusMap; }
+    public Map<String, Long> getProjectsByDepartmentMap() { return projectsByDepartmentMap; }
+    public void setProjectsByDepartmentMap(Map<String, Long> projectsByDepartmentMap) { this.projectsByDepartmentMap = projectsByDepartmentMap; }
+    public Map<String, Long> getProjectsByPriorityMap() { return projectsByPriorityMap; }
+    public void setProjectsByPriorityMap(Map<String, Long> projectsByPriorityMap) { this.projectsByPriorityMap = projectsByPriorityMap; }
 }

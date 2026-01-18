@@ -68,4 +68,31 @@ public class ChangeRequestController {
         ChangeRequestDTO updated = changeRequestService.updateChangeRequestStatus(id, statusUpdate, adminId);
         return ResponseEntity.ok(updated);
     }
+    
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteChangeRequest(@PathVariable Long id, @RequestBody(required = false) DeleteChangeRequestRequest deleteRequest, HttpServletRequest request) {
+        String token = request.getHeader("Authorization").substring(7);
+        String role = jwtUtil.extractRole(token);
+        if (!"ADMIN".equals(role)) {
+            return ResponseEntity.status(403).build();
+        }
+        try {
+            changeRequestService.deleteChangeRequest(id);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+    
+    public static class DeleteChangeRequestRequest {
+        private String deletionReason;
+        
+        public String getDeletionReason() {
+            return deletionReason;
+        }
+        
+        public void setDeletionReason(String deletionReason) {
+            this.deletionReason = deletionReason;
+        }
+    }
 }

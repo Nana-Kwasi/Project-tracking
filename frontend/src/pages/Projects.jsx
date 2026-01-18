@@ -1,23 +1,32 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 import api from '../services/api'
 import StatusUpdateModal from '../components/StatusUpdateModal'
 import DeleteProjectModal from '../components/DeleteProjectModal'
+import DeleteChangeRequestModal from '../components/DeleteChangeRequestModal'
+import RefreshButton from '../components/RefreshButton'
+import CopyButton from '../components/CopyButton'
+import EmptyState from '../components/EmptyState'
 import Spinner from '../components/Spinner'
 import './Projects.css'
+import '../styles/statusBadges.css'
 
 const Projects = () => {
   const { user } = useAuth()
+  const { showError } = useToast()
   const [projects, setProjects] = useState([])
   const [changeRequests, setChangeRequests] = useState([])
   const [selectedProject, setSelectedProject] = useState(null)
   const [selectedChangeRequest, setSelectedChangeRequest] = useState(null)
   const [showStatusModal, setShowStatusModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showDeleteChangeRequestModal, setShowDeleteChangeRequestModal] = useState(false)
   const [isChangeRequest, setIsChangeRequest] = useState(false)
   const [updatingStatus, setUpdatingStatus] = useState(null)
   const [projectSearch, setProjectSearch] = useState('')
   const [changeRequestSearch, setChangeRequestSearch] = useState('')
+  const [openDropdown, setOpenDropdown] = useState(null)
   
   const isAdmin = user?.role === 'ADMIN'
 
@@ -66,8 +75,34 @@ const Projects = () => {
   const handleDeleteSuccess = () => {
     setShowDeleteModal(false)
     setSelectedProject(null)
+    setOpenDropdown(null)
     fetchData()
   }
+
+  const handleDeleteChangeRequest = (changeRequest) => {
+    setSelectedChangeRequest(changeRequest)
+    setShowDeleteChangeRequestModal(true)
+  }
+
+  const handleDeleteChangeRequestSuccess = () => {
+    setShowDeleteChangeRequestModal(false)
+    setSelectedChangeRequest(null)
+    setOpenDropdown(null)
+    fetchData()
+  }
+
+  const toggleDropdown = (projectId, event) => {
+    event.stopPropagation()
+    setOpenDropdown(openDropdown === projectId ? null : projectId)
+  }
+
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setOpenDropdown(null)
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [])
 
 
   const STATUS_OPTIONS = [
@@ -79,8 +114,10 @@ const Projects = () => {
 
   return (
     <div className="projects-page">
-      <h1>Projects Management</h1>
-
+      <div className="page-header">
+        <h1>Projects Management</h1>
+        <RefreshButton onRefresh={fetchData} />
+      </div>
       <div className="tables-section">
         <div className="table-container">
           <div className="table-header-with-search">
@@ -104,6 +141,8 @@ const Projects = () => {
                 <th>Status</th>
                 <th>Files</th>
                 <th>Logged By</th>
+                <th>Date Logged</th>
+                <th>Updated By</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -119,7 +158,12 @@ const Projects = () => {
                 })
                 .map((project) => (
                 <tr key={project.id}>
-                  <td>{project.projectId}</td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span>{project.projectId}</span>
+                      <CopyButton text={project.projectId} size="small" />
+                    </div>
+                  </td>
                   <td>{project.projectName}</td>
                   <td>{project.department}</td>
                   <td>{project.branch}</td>
@@ -154,7 +198,7 @@ const Projects = () => {
                                   window.URL.revokeObjectURL(url)
                                 } catch (error) {
                                   console.error('Download error:', error)
-                                  alert('Failed to download file')
+                                  showError('Failed to download file')
                                 }
                               }}
                               title="Download"
@@ -168,30 +212,52 @@ const Projects = () => {
                       <span style={{ color: '#999' }}>No files</span>
                     )}
                   </td>
-                  <td>{project.loggedBy}</td>
+                  <td>{project.loggedBy || 'N/A'}</td>
+                  <td>{project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'N/A'}</td>
+                  <td>{project.updatedBy || '-'}</td>
                   <td>
-                    <div className="action-buttons">
-                      <button 
-                        className="action-button"
-                        onClick={() => handleStatusUpdate(project.id, false)}
-                        disabled={updatingStatus === project.id}
+                    <div className="action-menu-container">
+                      <button
+                        className="action-menu-trigger"
+                        onClick={(e) => toggleDropdown(project.id, e)}
+                        title="Actions"
                       >
-                        {updatingStatus === project.id ? (
-                          <>
-                            <Spinner size="small" /> Updating...
-                          </>
-                        ) : (
-                          'Update Status'
-                        )}
+                        <span className="action-menu-dots">⋯</span>
                       </button>
-                      {isAdmin && (
-                        <button 
-                          className="delete-action-button"
-                          onClick={() => handleDeleteProject(project)}
-                          title="Delete Project"
-                        >
-                          🗑️
-                        </button>
+                      {openDropdown === project.id && (
+                        <div className="action-menu-dropdown" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            className="action-menu-item"
+                            onClick={() => {
+                              handleStatusUpdate(project.id, false)
+                              setOpenDropdown(null)
+                            }}
+                            disabled={updatingStatus === project.id}
+                          >
+                            {updatingStatus === project.id ? (
+                              <>
+                                <Spinner size="small" /> Updating...
+                              </>
+                            ) : (
+                              <>
+                                <span className="action-menu-icon">📝</span>
+                                Update Status
+                              </>
+                            )}
+                          </button>
+                          {isAdmin && (
+                            <button
+                              className="action-menu-item action-menu-item-danger"
+                              onClick={() => {
+                                handleDeleteProject(project)
+                                setOpenDropdown(null)
+                              }}
+                            >
+                              <span className="action-menu-icon">🗑️</span>
+                              Delete
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
                   </td>
@@ -221,6 +287,8 @@ const Projects = () => {
                 <th>Status</th>
                 <th>Files</th>
                 <th>Logged By</th>
+                <th>Date Logged</th>
+                <th>Updated By</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -236,7 +304,12 @@ const Projects = () => {
                 })
                 .map((cr) => (
                 <tr key={cr.id}>
-                  <td>{cr.projectProjectId}</td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span>{cr.projectProjectId}</span>
+                      <CopyButton text={cr.projectProjectId} size="small" />
+                    </div>
+                  </td>
                   <td>{cr.requestedFeature}</td>
                   <td>{cr.impactLevel}</td>
                   <td><span className={`status-badge ${cr.status.toLowerCase()}`}>{cr.status}</span></td>
@@ -269,7 +342,7 @@ const Projects = () => {
                                   window.URL.revokeObjectURL(url)
                                 } catch (error) {
                                   console.error('Download error:', error)
-                                  alert('Failed to download file')
+                                  showError('Failed to download file')
                                 }
                               }}
                               title="Download"
@@ -283,21 +356,54 @@ const Projects = () => {
                       <span style={{ color: '#999' }}>No files</span>
                     )}
                   </td>
-                  <td>{cr.loggedBy}</td>
+                  <td>{cr.loggedBy || 'N/A'}</td>
+                  <td>{cr.createdAt ? new Date(cr.createdAt).toLocaleDateString() : 'N/A'}</td>
+                  <td>{cr.updatedBy || '-'}</td>
                   <td>
-                    <button 
-                      className="action-button"
-                      onClick={() => handleStatusUpdate(cr.id, true)}
-                      disabled={updatingStatus === cr.id}
-                    >
-                      {updatingStatus === cr.id ? (
-                        <>
-                          <Spinner size="small" /> Updating...
-                        </>
-                      ) : (
-                        'Update Status'
+                    <div className="action-menu-container">
+                      <button
+                        className="action-menu-trigger"
+                        onClick={(e) => toggleDropdown(`cr-${cr.id}`, e)}
+                        title="Actions"
+                      >
+                        <span className="action-menu-dots">⋯</span>
+                      </button>
+                      {openDropdown === `cr-${cr.id}` && (
+                        <div className="action-menu-dropdown" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            className="action-menu-item"
+                            onClick={() => {
+                              handleStatusUpdate(cr.id, true)
+                              setOpenDropdown(null)
+                            }}
+                            disabled={updatingStatus === cr.id}
+                          >
+                            {updatingStatus === cr.id ? (
+                              <>
+                                <Spinner size="small" /> Updating...
+                              </>
+                            ) : (
+                              <>
+                                <span className="action-menu-icon">📝</span>
+                                Update Status
+                              </>
+                            )}
+                          </button>
+                          {isAdmin && (
+                            <button
+                              className="action-menu-item action-menu-item-danger"
+                              onClick={() => {
+                                handleDeleteChangeRequest(cr)
+                                setOpenDropdown(null)
+                              }}
+                            >
+                              <span className="action-menu-icon">🗑️</span>
+                              Delete
+                            </button>
+                          )}
+                        </div>
                       )}
-                    </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -312,6 +418,7 @@ const Projects = () => {
           isChangeRequest={isChangeRequest}
           onClose={() => {
             setShowStatusModal(false)
+            setUpdatingStatus(null)
             setSelectedProject(null)
             setSelectedChangeRequest(null)
           }}
@@ -327,6 +434,17 @@ const Projects = () => {
             setSelectedProject(null)
           }}
           onSuccess={handleDeleteSuccess}
+        />
+      )}
+
+      {showDeleteChangeRequestModal && selectedChangeRequest && (
+        <DeleteChangeRequestModal
+          changeRequest={selectedChangeRequest}
+          onClose={() => {
+            setShowDeleteChangeRequestModal(false)
+            setSelectedChangeRequest(null)
+          }}
+          onSuccess={handleDeleteChangeRequestSuccess}
         />
       )}
 

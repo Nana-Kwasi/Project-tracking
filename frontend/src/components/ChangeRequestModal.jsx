@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
 import Spinner from './Spinner'
+import SuccessModal from './SuccessModal'
 import './Modal.css'
 
 const ChangeRequestModal = ({ onClose, onSuccess }) => {
@@ -16,6 +17,8 @@ const ChangeRequestModal = ({ onClose, onSuccess }) => {
   const [files, setFiles] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [createdChangeRequestId, setCreatedChangeRequestId] = useState(null)
   
   // Get logged by value from user context (handle both camelCase and lowercase)
   const loggedBy = user?.fNumber || user?.fnumber || ''
@@ -44,12 +47,16 @@ const ChangeRequestModal = ({ onClose, onSuccess }) => {
     setError('')
     
     try {
-      const response = await api.post('/api/change-requests', {
-        projectId: formData.projectId,
-        requestedFeature: formData.requestedFeature,
-        reasonForChange: formData.reasonForChange,
-        impactLevel: formData.impactLevel
-      })
+      // Add minimum delay to show spinner
+      const [response] = await Promise.all([
+        api.post('/api/change-requests', {
+          projectId: formData.projectId,
+          requestedFeature: formData.requestedFeature,
+          reasonForChange: formData.reasonForChange,
+          impactLevel: formData.impactLevel
+        }),
+        new Promise(resolve => setTimeout(resolve, 1500)) // 1.5 second minimum delay
+      ])
       
       // Upload files if any
       if (files.length > 0) {
@@ -71,10 +78,13 @@ const ChangeRequestModal = ({ onClose, onSuccess }) => {
         }
       }
       
-      onSuccess()
+      setLoading(false)
+      // Use the project ID instead of change request ID
+      const projectId = response.data.projectProjectId || response.data.projectId
+      setCreatedChangeRequestId(projectId)
+      setShowSuccessModal(true)
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create change request')
-    } finally {
       setLoading(false)
     }
   }
@@ -171,6 +181,17 @@ const ChangeRequestModal = ({ onClose, onSuccess }) => {
           </div>
         </form>
       </div>
+
+      {showSuccessModal && createdChangeRequestId && (
+        <SuccessModal
+          projectId={createdChangeRequestId}
+          onClose={() => {
+            setShowSuccessModal(false)
+            setCreatedChangeRequestId(null)
+            onSuccess(createdChangeRequestId)
+          }}
+        />
+      )}
     </div>
   )
 }

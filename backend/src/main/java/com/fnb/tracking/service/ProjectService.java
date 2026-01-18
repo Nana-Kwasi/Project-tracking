@@ -88,6 +88,16 @@ public class ProjectService {
         return convertToDTO(project);
     }
     
+    public ProjectDTO getProjectByProjectId(String projectId) {
+        Project project = projectRepository.findByProjectId(projectId)
+            .orElseThrow(() -> new RuntimeException("Project not found with ID: " + projectId));
+        // Force load attachments
+        if (project.getAttachments() != null) {
+            project.getAttachments().size(); // Trigger lazy loading
+        }
+        return convertToDTO(project);
+    }
+    
     public ProjectDTO updateProject(Long projectId, ProjectDTO dto, Long userId) {
         Project project = projectRepository.findById(projectId).orElseThrow();
         
@@ -222,6 +232,15 @@ public class ProjectService {
             List<StatusHistory> rejectionHistory = statusHistoryRepository.findRejectionHistoryByProjectId(project.getId());
             if (!rejectionHistory.isEmpty()) {
                 dto.setRejectionReason(rejectionHistory.get(0).getRejectionReason());
+            }
+        }
+        
+        // Get latest status update to find who updated it
+        List<StatusHistory> latestHistory = statusHistoryRepository.findLatestByProjectId(project.getId());
+        if (!latestHistory.isEmpty()) {
+            StatusHistory latest = latestHistory.get(0);
+            if (latest.getUpdatedBy() != null) {
+                dto.setUpdatedBy(latest.getUpdatedBy().getFNumber());
             }
         }
         

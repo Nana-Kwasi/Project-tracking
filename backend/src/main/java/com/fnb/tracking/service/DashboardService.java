@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -16,6 +17,34 @@ public class DashboardService {
     
     @Autowired
     private ChangeRequestService changeRequestService;
+    
+    private void populateChartData(DashboardStatsDTO stats, List<ProjectDTO> projects) {
+        // Projects by Status
+        Map<String, Long> statusMap = projects.stream()
+            .collect(Collectors.groupingBy(
+                p -> p.getStatus() != null ? p.getStatus() : "UNKNOWN",
+                Collectors.counting()
+            ));
+        stats.setProjectsByStatusMap(statusMap);
+        
+        // Projects by Department
+        Map<String, Long> departmentMap = projects.stream()
+            .filter(p -> p.getDepartment() != null && !p.getDepartment().trim().isEmpty())
+            .collect(Collectors.groupingBy(
+                ProjectDTO::getDepartment,
+                Collectors.counting()
+            ));
+        stats.setProjectsByDepartmentMap(departmentMap);
+        
+        // Projects by Priority
+        Map<String, Long> priorityMap = projects.stream()
+            .filter(p -> p.getPriorityLevel() != null && !p.getPriorityLevel().trim().isEmpty())
+            .collect(Collectors.groupingBy(
+                ProjectDTO::getPriorityLevel,
+                Collectors.counting()
+            ));
+        stats.setProjectsByPriorityMap(priorityMap);
+    }
     
     public DashboardStatsDTO getAdminDashboard() {
         DashboardStatsDTO stats = new DashboardStatsDTO();
@@ -27,6 +56,8 @@ public class DashboardService {
         stats.setChangeRequests((long) allChangeRequests.size());
         stats.setNewProjectRequestsList(allProjects);
         stats.setChangeRequestsList(allChangeRequests);
+        
+        populateChartData(stats, allProjects);
         
         return stats;
     }
@@ -41,6 +72,8 @@ public class DashboardService {
         stats.setChangeRequests((long) userChangeRequests.size());
         stats.setNewProjectRequestsList(userProjects);
         stats.setChangeRequestsList(userChangeRequests);
+        
+        populateChartData(stats, userProjects);
         
         return stats;
     }

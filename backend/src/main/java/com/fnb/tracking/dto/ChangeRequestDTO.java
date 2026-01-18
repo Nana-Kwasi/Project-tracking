@@ -14,6 +14,7 @@ public class ChangeRequestDTO {
     private String status;
     private String loggedBy;
     private Long loggedById;
+    private String updatedBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<AttachmentDTO> attachments;
@@ -41,6 +42,8 @@ public class ChangeRequestDTO {
     public void setLoggedBy(String loggedBy) { this.loggedBy = loggedBy; }
     public Long getLoggedById() { return loggedById; }
     public void setLoggedById(Long loggedById) { this.loggedById = loggedById; }
+    public String getUpdatedBy() { return updatedBy; }
+    public void setUpdatedBy(String updatedBy) { this.updatedBy = updatedBy; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

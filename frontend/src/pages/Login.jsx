@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Spinner from '../components/Spinner'
+import SuspendedAccountModal from '../components/SuspendedAccountModal'
 import './Login.css'
 
 const Login = () => {
@@ -9,6 +10,7 @@ const Login = () => {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showSuspendedModal, setShowSuspendedModal] = useState(false)
   const { login } = useAuth()
   const navigate = useNavigate()
 
@@ -16,12 +18,17 @@ const Login = () => {
     e.preventDefault()
     setError('')
     setLoading(true)
+    setShowSuspendedModal(false)
     try {
       const result = await login(username, password)
       if (result.success) {
         navigate('/dashboard')
       } else {
-        setError(result.error || 'Invalid credentials')
+        if (result.suspended) {
+          setShowSuspendedModal(true)
+        } else {
+          setError(result.error || 'Invalid credentials')
+        }
       }
     } finally {
       setLoading(false)
@@ -71,6 +78,17 @@ const Login = () => {
           </form>
         </div>
       </div>
+
+      {showSuspendedModal && (
+        <SuspendedAccountModal
+          onClose={() => {
+            setShowSuspendedModal(false)
+            setUsername('')
+            setPassword('')
+          }}
+        />
+      )}
+
       <footer className="login-footer">
         <div className="login-footer-line"></div>
         <p className="login-footer-text">

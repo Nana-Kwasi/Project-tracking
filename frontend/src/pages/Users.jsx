@@ -37,12 +37,25 @@ const Users = () => {
     fetchUsers()
   }
 
+  const handleDelete = async (userId) => {
+    await api.delete(`/api/users/${userId}`)
+    fetchUsers()
+  }
+
+  const handleSuspend = async (user) => {
+    await api.put(`/api/users/${user.id}`, {
+      ...user,
+      isActive: !user.isActive
+    })
+    fetchUsers()
+  }
+
   return (
     <div className="users-page">
       <div className="page-header">
-        <h1>User Management</h1>
+        <h2>Admin Users</h2>
         <button className="primary-button" onClick={handleCreate}>
-          + Add User
+          + Add Admin User
         </button>
       </div>
 
@@ -88,6 +101,8 @@ const Users = () => {
             setEditingUser(null)
           }}
           onSuccess={handleSuccess}
+          onDelete={handleDelete}
+          onSuspend={handleSuspend}
         />
       )}
     </div>

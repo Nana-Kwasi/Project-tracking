@@ -38,8 +38,13 @@ const Reports = () => {
         Object.entries(filters).filter(([_, v]) => v !== '' && v != null)
       )
       
-      const response = await api.get('/api/reports', { params: cleanFilters })
+      // Add minimum delay to show spinner
+      const [response] = await Promise.all([
+        api.get('/api/reports', { params: cleanFilters }),
+        new Promise(resolve => setTimeout(resolve, 1500)) // 1.5 second minimum delay
+      ])
       setReportData(response.data)
+      setLoading(false)
     } catch (err) {
       if (err.response?.status === 403) {
         setError('Access denied. Please ensure you are logged in and have the necessary permissions. If the backend was just restarted, please refresh the page and try again.')
@@ -49,7 +54,6 @@ const Reports = () => {
         setError(err.response?.data?.message || 'Failed to generate report. Please try again.')
       }
       console.error('Report generation error:', err)
-    } finally {
       setLoading(false)
     }
   }
@@ -178,11 +182,14 @@ const Reports = () => {
         )
       }
       
+      // Add minimum delay to show spinner
+      await new Promise(resolve => setTimeout(resolve, 1500)) // 1.5 second minimum delay
+      
       doc.save(`FNB_Project_Report_${new Date().toISOString().split('T')[0]}.pdf`)
+      setExportPdfLoading(false)
     } catch (err) {
       setError('Failed to export PDF: ' + err.message)
       console.error('PDF export error:', err)
-    } finally {
       setExportPdfLoading(false)
     }
   }
@@ -233,19 +240,20 @@ const Reports = () => {
         XLSX.utils.book_append_sheet(workbook, crSheet, 'Change Requests')
       }
       
+      // Add minimum delay to show spinner
+      await new Promise(resolve => setTimeout(resolve, 1500)) // 1.5 second minimum delay
+      
       XLSX.writeFile(workbook, `FNB_Project_Report_${new Date().toISOString().split('T')[0]}.xlsx`)
+      setExportExcelLoading(false)
     } catch (err) {
       setError('Failed to export Excel: ' + err.message)
       console.error('Excel export error:', err)
-    } finally {
       setExportExcelLoading(false)
     }
   }
 
   return (
     <div className="reports-page">
-      <h1>Reports</h1>
-      
       <div className="filters-section">
         <h2>Filters</h2>
         <div className="filters-grid">

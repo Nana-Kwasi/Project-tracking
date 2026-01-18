@@ -62,6 +62,12 @@ public class ProjectController {
         return ResponseEntity.ok(project);
     }
     
+    @GetMapping("/search/{projectId}")
+    public ResponseEntity<ProjectDTO> getProjectByProjectId(@PathVariable String projectId) {
+        ProjectDTO project = projectService.getProjectByProjectId(projectId);
+        return ResponseEntity.ok(project);
+    }
+    
     @PutMapping("/{id}")
     public ResponseEntity<ProjectDTO> updateProject(@PathVariable Long id, @RequestBody ProjectDTO dto, HttpServletRequest request) {
         Long userId = getCurrentUserId(request);

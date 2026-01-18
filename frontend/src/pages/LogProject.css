@@ -3,12 +3,6 @@
   margin: 0 auto;
 }
 
-.log-project h1 {
-  color: #333;
-  margin-bottom: 2rem;
-  font-size: 2rem;
-  font-weight: 600;
-}
 
 .log-sections {
   display: flex;
@@ -36,7 +30,26 @@
   background: #e9ecef;
 }
 
-.primary-button {
+.project-request-button {
+  background: #00A8A8;
+  color: white;
+  border: none;
+  padding: 0.875rem 1.75rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 168, 168, 0.3);
+}
+
+.project-request-button:hover {
+  background: #00B3B3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 168, 168, 0.4);
+}
+
+.change-request-button {
   background: #F9A01B;
   color: white;
   border: none;
@@ -49,7 +62,7 @@
   box-shadow: 0 2px 8px rgba(249, 160, 27, 0.3);
 }
 
-.primary-button:hover {
+.change-request-button:hover {
   background: #FFA726;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(249, 160, 27, 0.4);
@@ -236,6 +249,13 @@ tbody tr:hover {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
+  gap: 1rem;
+}
+
+.page-header-left {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
 }
 
 .view-deleted-button {

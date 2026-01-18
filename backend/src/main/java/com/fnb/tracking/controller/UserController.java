@@ -32,4 +32,10 @@ public class UserController {
         UserDTO updated = userService.updateUser(id, dto);
         return ResponseEntity.ok(updated);
     }
+    
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        userService.deleteUser(id);
+        return ResponseEntity.ok().build();
+    }
 }

@@ -128,11 +128,15 @@ const Logs = () => {
       const filename = selectedDate 
         ? `FNB_Logs_${selectedDate}.pdf`
         : `FNB_Logs_${new Date().toISOString().split('T')[0]}.pdf`
+      
+      // Add minimum delay to show spinner
+      await new Promise(resolve => setTimeout(resolve, 1500)) // 1.5 second minimum delay
+      
       doc.save(filename)
+      setExportLoading(false)
     } catch (err) {
       alert('Failed to export PDF: ' + err.message)
       console.error('PDF export error:', err)
-    } finally {
       setExportLoading(false)
     }
   }
@@ -142,7 +146,6 @@ const Logs = () => {
   return (
     <div className="logs-page">
       <div className="logs-header">
-        <h1>System Logs</h1>
         <div className="logs-controls">
           <div className="form-group">
             <label>Filter by Date</label>

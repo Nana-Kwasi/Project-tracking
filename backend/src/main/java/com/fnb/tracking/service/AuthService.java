@@ -24,11 +24,15 @@ public class AuthService {
     public LoginResponse login(LoginRequest request, String ipAddress) {
         Optional<User> userOpt = userRepository.findByFNumber(request.getUsername());
         
-        if (userOpt.isEmpty() || !userOpt.get().getIsActive()) {
+        if (userOpt.isEmpty()) {
             throw new RuntimeException("Invalid credentials");
         }
         
         User user = userOpt.get();
+        if (!user.getIsActive()) {
+            throw new RuntimeException("ACCOUNT_SUSPENDED");
+        }
+        
         if (!request.getPassword().equals(user.getPassword())) {
             throw new RuntimeException("Invalid credentials");
         }

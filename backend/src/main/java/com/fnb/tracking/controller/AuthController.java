@@ -17,8 +17,15 @@ public class AuthController {
     
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request, HttpServletRequest httpRequest) {
-        String ipAddress = httpRequest.getRemoteAddr();
-        LoginResponse response = authService.login(request, ipAddress);
-        return ResponseEntity.ok(response);
+        try {
+            String ipAddress = httpRequest.getRemoteAddr();
+            LoginResponse response = authService.login(request, ipAddress);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            if ("ACCOUNT_SUSPENDED".equals(e.getMessage())) {
+                return ResponseEntity.status(403).build();
+            }
+            throw e;
+        }
     }
 }

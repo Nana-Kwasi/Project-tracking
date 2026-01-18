@@ -60,12 +60,18 @@ const ProjectModal = ({ onClose, onSuccess, project = null, isEdit = false }) =>
     setError('')
     
     try {
+      // Add minimum delay to show spinner
+      const [response] = await Promise.all([
+        isEdit 
+          ? api.put(`/api/projects/${project.id}`, formData)
+          : api.post('/api/projects', formData),
+        new Promise(resolve => setTimeout(resolve, 1500)) // 1.5 second minimum delay
+      ])
+      
       let projectId
       if (isEdit) {
-        const response = await api.put(`/api/projects/${project.id}`, formData)
         projectId = response.data.projectId
       } else {
-        const response = await api.post('/api/projects', formData)
         projectId = response.data.projectId
         setCreatedProjectId(projectId)
         
@@ -90,13 +96,14 @@ const ProjectModal = ({ onClose, onSuccess, project = null, isEdit = false }) =>
         }
         
         setShowSuccessModal(true)
+        setLoading(false)
         return
       }
       
+      setLoading(false)
       onSuccess()
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to create project')
-    } finally {
       setLoading(false)
     }
   }

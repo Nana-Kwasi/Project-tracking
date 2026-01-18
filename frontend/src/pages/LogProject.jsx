@@ -1,15 +1,22 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 import api from '../services/api'
 import ProjectModal from '../components/ProjectModal'
 import ChangeRequestModal from '../components/ChangeRequestModal'
 import DeletedProjectsModal from '../components/DeletedProjectsModal'
 import RejectionDetailsModal from '../components/RejectionDetailsModal'
+import SuccessModal from '../components/SuccessModal'
+import RefreshButton from '../components/RefreshButton'
+import CopyButton from '../components/CopyButton'
+import EmptyState from '../components/EmptyState'
 import Spinner from '../components/Spinner'
 import './LogProject.css'
+import '../styles/statusBadges.css'
 
 const LogProject = () => {
   const { user } = useAuth()
+  const { showError } = useToast()
   const [showProjectModal, setShowProjectModal] = useState(false)
   const [showChangeRequestModal, setShowChangeRequestModal] = useState(false)
   const [projects, setProjects] = useState([])
@@ -21,6 +28,9 @@ const LogProject = () => {
   const [showDeletedProjectsModal, setShowDeletedProjectsModal] = useState(false)
   const [selectedRejectedProject, setSelectedRejectedProject] = useState(null)
   const [showRejectionModal, setShowRejectionModal] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [successProjectId, setSuccessProjectId] = useState(null)
+  const [successChangeRequestId, setSuccessChangeRequestId] = useState(null)
 
   useEffect(() => {
     fetchData()
@@ -39,13 +49,17 @@ const LogProject = () => {
     }
   }
 
-  const handleProjectCreated = () => {
+  const handleProjectCreated = (projectId) => {
     setShowProjectModal(false)
+    setSuccessProjectId(projectId)
+    setShowSuccessModal(true)
     fetchData()
   }
 
-  const handleChangeRequestCreated = () => {
+  const handleChangeRequestCreated = (changeRequestId) => {
     setShowChangeRequestModal(false)
+    setSuccessChangeRequestId(changeRequestId)
+    setShowSuccessModal(true)
     fetchData()
   }
 
@@ -84,7 +98,7 @@ const LogProject = () => {
       window.URL.revokeObjectURL(url)
     } catch (error) {
       console.error('Download error:', error)
-      alert('Failed to download file')
+      showError('Failed to download file')
     }
   }
 
@@ -95,20 +109,22 @@ const LogProject = () => {
   return (
     <div className="log-project">
       <div className="page-header">
-        <h1>Log Project</h1>
-        <button 
-          className="view-deleted-button"
-          onClick={() => setShowDeletedProjectsModal(true)}
-        >
-          View Deleted Projects
-        </button>
+        <div className="page-header-left">
+          <button 
+            className="view-deleted-button"
+            onClick={() => setShowDeletedProjectsModal(true)}
+          >
+            View Deleted Projects
+          </button>
+        </div>
+        <RefreshButton onRefresh={fetchData} />
       </div>
       
       <div className="log-sections">
         <div className="log-section">
           <h2>Log New Project Request</h2>
           <button 
-            className="primary-button"
+            className="project-request-button"
             onClick={() => setShowProjectModal(true)}
           >
             + New Project Request
@@ -120,7 +136,7 @@ const LogProject = () => {
         <div className="log-section">
           <h2>Log Change Request</h2>
           <button 
-            className="primary-button"
+            className="change-request-button"
             onClick={() => setShowChangeRequestModal(true)}
           >
             + New Change Request
@@ -142,17 +158,17 @@ const LogProject = () => {
           </div>
           <table>
             <thead>
-              <tr>
-                <th>Project ID</th>
-                <th>Project Name</th>
-                <th>Department</th>
-                <th>Branch</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Files</th>
-                <th>Date</th>
-                <th>Actions</th>
-              </tr>
+                    <tr>
+                      <th>Project ID</th>
+                      <th>Project Name</th>
+                      <th>Department</th>
+                      <th>Branch</th>
+                      <th>Priority</th>
+                      <th>Status</th>
+                      <th>Files</th>
+                      <th>Logged By</th>
+                      <th>Date</th>
+                    </tr>
             </thead>
             <tbody>
               {projects
@@ -166,7 +182,12 @@ const LogProject = () => {
                 })
                 .map((project) => (
                 <tr key={project.id}>
-                  <td>{project.projectId}</td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span>{project.projectId}</span>
+                      <CopyButton text={project.projectId} size="small" />
+                    </div>
+                  </td>
                   <td>{project.projectName}</td>
                   <td>{project.department}</td>
                   <td>{project.branch}</td>
@@ -214,22 +235,19 @@ const LogProject = () => {
                       <span style={{ color: '#999' }}>No files</span>
                     )}
                   </td>
+                  <td>{project.loggedBy || 'N/A'}</td>
                   <td>{new Date(project.createdAt).toLocaleDateString()}</td>
-                  <td>
-                    {canEditProject(project) && (
-                      <button
-                        className="edit-button"
-                        onClick={() => handleEditProject(project)}
-                      >
-                        Edit
-                      </button>
-                    )}
-                  </td>
                 </tr>
               ))}
               {projects.length === 0 && (
                 <tr>
-                  <td colSpan="9" style={{ textAlign: 'center' }}>No projects found</td>
+                  <td colSpan="9" style={{ padding: '3rem' }}>
+                    <EmptyState
+                      icon="📋"
+                      title="No Projects Found"
+                      message="You haven't logged any project requests yet. Click 'New Project Request' to get started."
+                    />
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -252,9 +270,11 @@ const LogProject = () => {
               <tr>
                 <th>Project ID</th>
                 <th>Requested Feature</th>
+                <th>Reason for Change</th>
                 <th>Impact Level</th>
                 <th>Status</th>
                 <th>Files</th>
+                <th>Logged By</th>
                 <th>Date</th>
               </tr>
             </thead>
@@ -270,9 +290,15 @@ const LogProject = () => {
                 })
                 .map((cr) => (
                 <tr key={cr.id}>
-                  <td>{cr.projectProjectId}</td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span>{cr.projectProjectId}</span>
+                      <CopyButton text={cr.projectProjectId} size="small" />
+                    </div>
+                  </td>
                   <td>{cr.requestedFeature}</td>
-                  <td>{cr.impactLevel}</td>
+                  <td>{cr.reasonForChange || '-'}</td>
+                  <td>{cr.impactLevel || '-'}</td>
                   <td><span className={`status-badge ${cr.status.toLowerCase()}`}>{cr.status}</span></td>
                   <td>
                     {cr.attachments && cr.attachments.length > 0 ? (
@@ -300,12 +326,19 @@ const LogProject = () => {
                       <span style={{ color: '#999' }}>No files</span>
                     )}
                   </td>
+                  <td>{cr.loggedBy || 'N/A'}</td>
                   <td>{new Date(cr.createdAt).toLocaleDateString()}</td>
                 </tr>
               ))}
               {changeRequests.length === 0 && (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center' }}>No change requests found</td>
+                  <td colSpan="8" style={{ padding: '3rem' }}>
+                    <EmptyState
+                      icon="🔄"
+                      title="No Change Requests Found"
+                      message="You haven't logged any change requests yet. Click 'New Change Request' to get started."
+                    />
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -351,6 +384,17 @@ const LogProject = () => {
           onClose={() => {
             setShowRejectionModal(false)
             setSelectedRejectedProject(null)
+          }}
+        />
+      )}
+
+      {showSuccessModal && (successProjectId || successChangeRequestId) && (
+        <SuccessModal
+          projectId={successProjectId || successChangeRequestId}
+          onClose={() => {
+            setShowSuccessModal(false)
+            setSuccessProjectId(null)
+            setSuccessChangeRequestId(null)
           }}
         />
       )}
